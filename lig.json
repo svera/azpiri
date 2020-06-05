@@ -1,0 +1,12 @@
+{
+	"BackgroundsFolder": "/media/screenshots/",
+	"ForegroundsFolder": "/media/marquees/",
+	"TextContent": "Loading...",
+	"TextSize": 24,
+	"TextFont": "Arcade",
+	"BackgroundBrightness": -20,
+	"BackgroundKeepAspectRatio": true,
+	"ForegroundScale": 2,
+	"TargetWidth": 1024,
+	"TargetHeight": 768
+}
