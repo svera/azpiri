@@ -1,6 +1,9 @@
 package cmd
 
 import (
+	"encoding/json"
+	"image"
+	"image/color"
 	"io/ioutil"
 	"log"
 	"os"
@@ -8,122 +11,105 @@ import (
 	"strings"
 
 	"github.com/cheggaaa/pb/v3"
-	"gopkg.in/gographics/imagick.v2/imagick"
+	"github.com/disintegration/imaging"
 )
 
-const backgroundsFolder = "/media/screenshots/"
-const foregroundsFolder = "/media/marquees/"
-const textContent = "Loading..."
-const textSize = 24
-const textFont = "Arcade"
-const backgroundBrightness = -20
-const backgroundKeepAspectRatio = true
-const foregroundScale = 2
-const targetWidth = 1024
-const targetHeight = 768
-
 type config struct {
-	BackgroundsFolder         string
-	ForegroundsFolder         string
-	TextContent               string
-	TextSize                  int
-	TextFont                  string
-	BackgroundBrightness      int
+	BackgroundBrightness      float64
+	BackgroundBlur            float64
 	BackgroundKeepAspectRatio bool
-	ForegroundScale           int
+	ForegroundWidth           int
 	TargetWidth               int
 	TargetHeight              int
 }
 
 func process() {
-	files, err := ioutil.ReadDir(folder)
+	files, err := ioutil.ReadDir(romsFolder)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	imagick.Initialize()
-	defer imagick.Terminate()
-	background := imagick.NewMagickWand()
-	foreground := imagick.NewMagickWand()
-	dw := imagick.NewDrawingWand()
-	pw := imagick.NewPixelWand()
+	cfg, err := loadConfig()
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	bar := pb.StartNew(len(files))
+	filtered := filterFiles(files)
+	bar := pb.StartNew(len(filtered))
 
-	for _, fileInfo := range files {
-		if fileInfo.IsDir() || fileInfo.Name()[0:1] == "." {
-			bar.Increment()
-			continue
-		}
-		imageName := folder + backgroundsFolder + fileNameWithoutExtension(fileInfo.Name()) + ".png"
-		file, err := os.Open(imageName)
+	outputFolder := romsFolder + "/images/"
+	if _, err := os.Stat(outputFolder); os.IsNotExist(err) {
+		os.Mkdir(outputFolder, 0755)
+	}
+
+	for _, fileInfo := range filtered {
+		imageName := backgroundsFolder + "/" + fileNameWithoutExtension(fileInfo.Name()) + ".png"
+		background, err := imaging.Open(imageName)
 		if err != nil {
-			log.Printf("Error loading image %s, skipping generation of launching image for %s\n", imageName, fileInfo.Name())
+			log.Printf("Error loading background image %s, skipping generation of launching image for %s\n", imageName, fileInfo.Name())
 			bar.Increment()
 			continue
 		}
-		background.ReadImageFile(file)
 
-		imageName = folder + foregroundsFolder + fileNameWithoutExtension(fileInfo.Name()) + ".png"
-		file, err = os.Open(imageName)
+		imageName = foregroundsFolder + "/" + fileNameWithoutExtension(fileInfo.Name()) + ".png"
+		foreground, err := imaging.Open(imageName)
 		if err != nil {
-			log.Printf("Error loading marquee %s, skipping generation of launching image for %s\n", imageName, fileInfo.Name())
+			log.Printf("Error loading foreground image %s, skipping generation of launching image for %s\n", imageName, fileInfo.Name())
 			bar.Increment()
 			continue
 		}
-		foreground.ReadImageFile(file)
-		foreground.ResizeImage(foreground.GetImageWidth()*foregroundScale, foreground.GetImageHeight()*foregroundScale, imagick.FILTER_CUBIC, 1)
 
-		if backgroundKeepAspectRatio {
-			w := int(background.GetImageWidth())
-			h := int(background.GetImageHeight())
-			pw.SetColor("black")
-			background.SetImageBackgroundColor(pw)
-			w = w * targetHeight / h
-			h = targetHeight
-			background.ScaleImage(uint(w), uint(h))
-			background.ExtentImage(targetWidth, targetHeight, -(targetWidth-w)/2, -(targetHeight-h)/2)
-		} else {
-			background.ScaleImage(targetWidth, targetHeight)
+		dst := composeImage(background, foreground, cfg)
+		err = imaging.Save(dst, outputFolder+fileNameWithoutExtension(fileInfo.Name())+"-launching.png")
+		if err != nil {
+			log.Fatalf("failed to save image: %v", err)
 		}
-
-		background.BlurImage(50, 5)
-		background.BrightnessContrastImage(backgroundBrightness, 0)
-
-		writeText(dw, pw, foreground)
-		// Draw the image on to the background
-		background.DrawImage(dw)
-
-		x, y := center(background, foreground)
-		background.CompositeImage(foreground, imagick.COMPOSITE_OP_OVER, x, y)
-		background.WriteImage(fileNameWithoutExtension(fileInfo.Name()) + "-launching.png")
-		dw.Clear()
-		background.Clear()
-		foreground.Clear()
 
 		bar.Increment()
 	}
 	bar.Finish()
 }
 
+func filterFiles(files []os.FileInfo) []os.FileInfo {
+	filtered := []os.FileInfo{}
+	for _, fileInfo := range files {
+		if filepath.Ext(fileInfo.Name()) != ".cfg" && filepath.Ext(fileInfo.Name()) != ".bsv" && !fileInfo.IsDir() && fileInfo.Name()[0:1] != "." {
+			filtered = append(filtered, fileInfo)
+		}
+	}
+	return filtered
+}
+
 func fileNameWithoutExtension(fileName string) string {
 	return strings.TrimSuffix(fileName, filepath.Ext(fileName))
 }
 
-func center(background *imagick.MagickWand, foreground *imagick.MagickWand) (int, int) {
-	x := int(background.GetImageWidth()/2) - int(foreground.GetImageWidth()/2)
-	y := int(background.GetImageHeight()/2) - int(foreground.GetImageHeight()/2)
-	return x, y
+func composeImage(background image.Image, foreground image.Image, cfg config) *image.NRGBA {
+	foreground = imaging.Resize(foreground, cfg.ForegroundWidth, 0, imaging.Lanczos)
+
+	canvas := imaging.New(cfg.TargetWidth, cfg.TargetHeight, color.Black)
+	background = imaging.Resize(background, cfg.TargetWidth, 0, imaging.Lanczos)
+	background = imaging.PasteCenter(canvas, background)
+
+	background = imaging.Blur(background, cfg.BackgroundBlur)
+	background = imaging.AdjustBrightness(background, cfg.BackgroundBrightness)
+
+	return imaging.OverlayCenter(background, foreground, 1)
 }
 
-func writeText(dw *imagick.DrawingWand, pw *imagick.PixelWand, foreground *imagick.MagickWand) {
-	pw.SetColor("white")
-	dw.SetFillColor(pw)
-	if err := dw.SetFont(textFont); err != nil {
-		log.Printf("Error using font '%s'\n", textFont)
+func loadConfig() (config, error) {
+	cfg := config{}
+	f, err := os.Open("azpiri.json")
+	defer f.Close()
+	if err != nil {
+		return cfg, err
 	}
-	dw.SetFontSize(textSize)
-	// Now draw the text
-	dw.SetGravity(imagick.GRAVITY_CENTER)
-	dw.Annotation(0, float64((foreground.GetImageHeight()/2)+textSize), textContent)
+	byteValue, err := ioutil.ReadAll(f)
+	if err != nil {
+		return cfg, err
+	}
+	if err := json.Unmarshal(byteValue, &cfg); err != nil {
+		return cfg, err
+	}
+	return cfg, nil
 }

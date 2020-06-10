@@ -1,6 +1,6 @@
 package main
 
-import "github.com/svera/launching-images-generator/cmd"
+import "github.com/svera/azpiri/cmd"
 
 func main() {
 	cmd.Execute()

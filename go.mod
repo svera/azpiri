@@ -1,9 +1,10 @@
-module github.com/svera/launching-images-generator
+module github.com/svera/azpiri
 
 go 1.14
 
 require (
 	github.com/cheggaaa/pb/v3 v3.0.4
+	github.com/disintegration/imaging v1.6.2
 	github.com/spf13/cobra v1.0.0
-	gopkg.in/gographics/imagick.v2 v2.6.0
+	golang.org/x/image v0.0.0-20200430140353-33d19683fad8 // indirect
 )
