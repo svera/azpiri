@@ -5,6 +5,8 @@ for each one, will check the provided `Backgrounds Folder` and `Foregrounds Fold
 with the same name as the ROM, composing an image with them to be used as a launching image for that game.
 It's mainly designed to work alongside Lars Muldjord's [SkyScraper](https://github.com/muldjord/skyscraper), using it's folder structure by default.
 
+![Example image](example.png)
+
 ## Usage
 
 Just run `azpiri` to start generating custom launching images, that will be stored in `<roms folder>/images`.
@@ -19,8 +21,8 @@ Just run `azpiri` to start generating custom launching images, that will be stor
 
 Certain image generation parameters can be changed by modifyng `azpiri.json`:
 
-* BackgroundBrightness: Percentage to increase/decrease background image brightness.
-* BackgroundBlur: Amount of blur to apply to background image.
-* ForegroundWidth: Width to resize the foreground image in pixels.
-* TargetWidth: Created image width.
-* TargetHeight": Created image height.
+* `BackgroundBrightness`: Percentage to increase/decrease background image brightness.
+* `BackgroundBlur`: Amount of blur to apply to background image.
+* `ForegroundWidth`: Width to resize the foreground image in pixels.
+* `TargetWidth`: Created image width.
+* `TargetHeight`: Created image height.
