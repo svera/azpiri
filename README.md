@@ -13,13 +13,13 @@ Just run `azpiri` to start generating custom launching images, that will be stor
 
 ### Optional parameters
 
-* Roms Folder: flag `-r` or `--roms`. Directory to get background images from. By default it's the same directory the application is running from.
-* Backgrounds Folder: flag `-b` or `--backgrounds`. Directory to get background images from. By default it's `<roms folder>/media/screenshots/`.
-* Foregrounds Folder: flag `-f` or `--foregrounds`. Directory to get foreground images from. By default it's `<roms folder>/media/marquees/`.
+* `-r` or `--roms`: Directory to get background images from. By default it's the same directory the application is running from.
+* `-b` or `--backgrounds`: Directory to get background images from. By default it's `<roms folder>/media/screenshots/`.
+* `-f` or `--foregrounds`: Directory to get foreground images from. By default it's `<roms folder>/media/marquees/`.
 
 ## Options
 
-Certain image generation parameters can be changed by modifyng `azpiri.json`:
+Certain image generation parameters can be changed by modifying `azpiri.json`:
 
 * `BackgroundBrightness`: Percentage to increase/decrease background image brightness.
 * `BackgroundBlur`: Amount of blur to apply to background image.
