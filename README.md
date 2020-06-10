@@ -1,9 +1,9 @@
 # Azpiri
 
 A launching images generator for Retropie. It will scan the provided folder for ROM files, and
-for each one, will check the provided `Backgrounds Folder` and `Foregrounds Folder` for PNG images
+for each one, will check the provided backgrounds and foregrounds folders for PNG images
 with the same name as the ROM, composing an image with them to be used as a launching image for that game.
-It's mainly designed to work alongside Lars Muldjord's [SkyScraper](https://github.com/muldjord/skyscraper), using it's folder structure by default.
+It's mainly designed to work alongside Lars Muldjord's [SkyScraper](https://github.com/muldjord/skyscraper), using its folder structure by default.
 
 ![Example image](example.png)
 
